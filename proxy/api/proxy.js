@@ -28,7 +28,11 @@ const IAM_CREDENTIALS_URL = 'https://iamcredentials.googleapis.com/v1';
 const env = (nome) => (process.env[nome] || '').trim();
 
 const WIF_AUDIENCE = env('GCP_WORKLOAD_IDENTITY_AUDIENCE');
-const SERVICE_ACCOUNT = env('GCP_SERVICE_ACCOUNT_EMAIL');
+
+// E-mail de service account nunca termina em ponto. Quando termina, e ponto
+// final de frase que veio junto na colagem, e o Google recusa com
+// "Invalid form of account ID".
+const SERVICE_ACCOUNT = env('GCP_SERVICE_ACCOUNT_EMAIL').replace(/\.+$/, '');
 
 const BACKEND_URL = env('BACKEND_URL');
 const FRONTEND_PRIMARY = env('FRONTEND_URL_PRIMARY');
@@ -78,7 +82,10 @@ async function gerarTokenDeIdentidade(tokenFederado, audience) {
   });
 
   if (!resp.ok) {
-    throw new Error(`generateIdToken falhou (${resp.status}): ${(await resp.text()).slice(0, 200)}`);
+    throw new Error(
+      `generateIdToken falhou (${resp.status}) para a conta [${SERVICE_ACCOUNT}]: ` +
+        (await resp.text()).slice(0, 200)
+    );
   }
 
   return (await resp.json()).token;
