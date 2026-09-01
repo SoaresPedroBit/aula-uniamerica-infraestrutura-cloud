@@ -23,12 +23,16 @@
 const STS_URL = 'https://sts.googleapis.com/v1/token';
 const IAM_CREDENTIALS_URL = 'https://iamcredentials.googleapis.com/v1';
 
-const WIF_AUDIENCE = process.env.GCP_WORKLOAD_IDENTITY_AUDIENCE;
-const SERVICE_ACCOUNT = process.env.GCP_SERVICE_ACCOUNT_EMAIL;
+// Valores colados em painel web costumam trazer espaco ou quebra de linha
+// invisivel na ponta, o que o STS rejeita sem explicar. Normalizamos na leitura.
+const env = (nome) => (process.env[nome] || '').trim();
 
-const BACKEND_URL = process.env.BACKEND_URL;
-const FRONTEND_PRIMARY = process.env.FRONTEND_URL_PRIMARY;
-const FRONTEND_SECONDARY = process.env.FRONTEND_URL_SECONDARY;
+const WIF_AUDIENCE = env('GCP_WORKLOAD_IDENTITY_AUDIENCE');
+const SERVICE_ACCOUNT = env('GCP_SERVICE_ACCOUNT_EMAIL');
+
+const BACKEND_URL = env('BACKEND_URL');
+const FRONTEND_PRIMARY = env('FRONTEND_URL_PRIMARY');
+const FRONTEND_SECONDARY = env('FRONTEND_URL_SECONDARY');
 
 // Tokens de identidade valem uma hora. Guardamos por destino e renovamos com
 // folga, para nao repetir as duas chamadas de rede a cada requisicao.
@@ -50,7 +54,12 @@ async function trocarTokenNoSTS(tokenVercel) {
   });
 
   if (!resp.ok) {
-    throw new Error(`STS recusou a troca (${resp.status}): ${(await resp.text()).slice(0, 200)}`);
+    // O audience e um nome de recurso publico, nao um segredo: registra-lo
+    // aqui e o que permite diagnosticar valor colado errado.
+    throw new Error(
+      `STS recusou a troca (${resp.status}) para audience [${WIF_AUDIENCE}]: ` +
+        (await resp.text()).slice(0, 200)
+    );
   }
 
   return (await resp.json()).access_token;
