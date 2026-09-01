@@ -3,37 +3,95 @@
 // Recebe todas as requisições dos dois subdomínios e as encaminha:
 //
 //   200status.soarespedro.com.br      -> Cloud Run do front-end (regiao A, com failover para a B)
-//   api.200status.soarespedro.com.br  -> Cloud Run do back-end (privado, exige token OIDC)
+//   api.200status.soarespedro.com.br  -> Cloud Run do back-end
 //
-// O back-end sobe com --no-allow-unauthenticated, ou seja, recusa qualquer
-// chamada anonima da Internet. Somente este proxy consegue invoca-lo, porque
-// assina um token OIDC com a service account autorizada.
+// Os tres servicos do Cloud Run sobem com --no-allow-unauthenticated e recusam
+// qualquer chamada anonima. Somente este proxy consegue invoca-los.
+//
+// A identidade e obtida por Workload Identity Federation, sem nenhuma chave de
+// longa duracao no repositorio ou nas variaveis de ambiente. O caminho e:
+//
+//   1. a Vercel injeta VERCEL_OIDC_TOKEN no runtime, com validade curta
+//   2. esse token e trocado no STS do Google por um token de acesso federado
+//   3. o token federado gera um token de identidade em nome da proxy-sa
+//   4. o token de identidade acompanha a requisicao ao Cloud Run
+//
+// O passo 3 so funciona porque a condicao de atributo do provedor exige que o
+// claim "sub" venha do deploy de producao deste projeto Vercel.
 
-const { GoogleAuth } = require('google-auth-library');
+const STS_URL = 'https://sts.googleapis.com/v1/token';
+const IAM_CREDENTIALS_URL = 'https://iamcredentials.googleapis.com/v1';
+
+const WIF_AUDIENCE = process.env.GCP_WORKLOAD_IDENTITY_AUDIENCE;
+const SERVICE_ACCOUNT = process.env.GCP_SERVICE_ACCOUNT_EMAIL;
 
 const BACKEND_URL = process.env.BACKEND_URL;
 const FRONTEND_PRIMARY = process.env.FRONTEND_URL_PRIMARY;
 const FRONTEND_SECONDARY = process.env.FRONTEND_URL_SECONDARY;
 
-// Clientes de identidade reaproveitados entre invocacoes quentes da funcao,
-// um por destino, para nao assinar um token novo a cada requisicao.
-const clientesPorDestino = new Map();
+// Tokens de identidade valem uma hora. Guardamos por destino e renovamos com
+// folga, para nao repetir as duas chamadas de rede a cada requisicao.
+const MARGEM_RENOVACAO_MS = 5 * 60 * 1000;
+const tokensPorDestino = new Map();
 
-async function getAuthHeaders(audience) {
-  // Sem chave configurada nao ha o que assinar. Isso so acontece em teste local:
-  // em producao a ausencia do cabecalho faz o Cloud Run recusar com 403, ou seja,
-  // a falha e fechada, nunca aberta.
-  if (!process.env.GCP_SERVICE_ACCOUNT_KEY) return {};
+async function trocarTokenNoSTS(tokenVercel) {
+  const resp = await fetch(STS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      audience: WIF_AUDIENCE,
+      grantType: 'urn:ietf:params:oauth:grant-type:token-exchange',
+      requestedTokenType: 'urn:ietf:params:oauth:token-type:access_token',
+      scope: 'https://www.googleapis.com/auth/cloud-platform',
+      subjectTokenType: 'urn:ietf:params:oauth:token-type:jwt',
+      subjectToken: tokenVercel,
+    }),
+  });
 
-  if (!clientesPorDestino.has(audience)) {
-    const credentials = JSON.parse(process.env.GCP_SERVICE_ACCOUNT_KEY);
-    const auth = new GoogleAuth({ credentials });
-    clientesPorDestino.set(audience, await auth.getIdTokenClient(audience));
+  if (!resp.ok) {
+    throw new Error(`STS recusou a troca (${resp.status}): ${(await resp.text()).slice(0, 200)}`);
   }
 
-  const headers = await clientesPorDestino.get(audience).getRequestHeaders();
-  // Versoes recentes da biblioteca devolvem um objeto Headers em vez de um objeto simples.
-  return typeof headers.entries === 'function' ? Object.fromEntries(headers.entries()) : headers;
+  return (await resp.json()).access_token;
+}
+
+async function gerarTokenDeIdentidade(tokenFederado, audience) {
+  const url = `${IAM_CREDENTIALS_URL}/projects/-/serviceAccounts/${SERVICE_ACCOUNT}:generateIdToken`;
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${tokenFederado}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ audience, includeEmail: true }),
+  });
+
+  if (!resp.ok) {
+    throw new Error(`generateIdToken falhou (${resp.status}): ${(await resp.text()).slice(0, 200)}`);
+  }
+
+  return (await resp.json()).token;
+}
+
+async function getAuthHeaders(audience) {
+  const tokenVercel = process.env.VERCEL_OIDC_TOKEN;
+
+  // Sem token da Vercel nao ha identidade a federar. Isso so acontece em teste
+  // local: em producao a ausencia do cabecalho faz o Cloud Run recusar com 403,
+  // ou seja, a falha e fechada, nunca aberta.
+  if (!tokenVercel || !WIF_AUDIENCE || !SERVICE_ACCOUNT) return {};
+
+  const emCache = tokensPorDestino.get(audience);
+  if (emCache && emCache.expiraEm > Date.now() + MARGEM_RENOVACAO_MS) {
+    return { Authorization: `Bearer ${emCache.token}` };
+  }
+
+  const tokenFederado = await trocarTokenNoSTS(tokenVercel);
+  const token = await gerarTokenDeIdentidade(tokenFederado, audience);
+
+  tokensPorDestino.set(audience, { token, expiraEm: Date.now() + 60 * 60 * 1000 });
+  return { Authorization: `Bearer ${token}` };
 }
 
 // Cabecalhos que nao podem ser repassados adiante: ou pertencem a conexao
@@ -49,6 +107,7 @@ const HOP_BY_HOP = new Set([
   'te',
   'trailer',
   'content-length',
+  'authorization',
 ]);
 
 function repassarCabecalhos(req) {
@@ -100,7 +159,7 @@ module.exports = async (req, res) => {
   const host = (req.headers.host || '').toLowerCase();
 
   try {
-    // ---- Rota da API: back-end privado, exige token OIDC ----
+    // ---- Rota da API: back-end privado ----
     if (host.startsWith('api.')) {
       if (!BACKEND_URL) {
         return res.status(503).json({ message: 'BACKEND_URL nao configurada' });
