@@ -1,0 +1,23 @@
+# Dependências locais do Node.js (serão instaladas do zero DENTRO do container)
+**/node_modules
+**/*.log
+npm-debug.log*
+
+# Variáveis de ambiente e segredos locais
+**/.env
+**/.env.*
+!**/.env.example
+
+# Git e controle de versão
+.git
+.gitignore
+
+# Documentação e arquivos do ambiente de desenvolvimento
+README.md
+data/
+
+# Arquivos temporários e do sistema operacional
+.DS_Store
+Thumbs.db
+**/.vscode
+**/.idea
