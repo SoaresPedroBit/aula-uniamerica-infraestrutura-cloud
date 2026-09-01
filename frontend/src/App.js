@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import Swal from 'sweetalert2';
 import './App.css';
 
 function App() {
@@ -32,8 +33,28 @@ function App() {
 
   // Função para excluir a tarefa
   const deleteTodo = async (id) => {
-    await axios.delete(`http://localhost:5000/todos/${id}`);
-    setTodos(todos.filter(todo => todo._id !== id));
+    const result = await Swal.fire({
+      title: 'Tem certeza?',
+      text: 'Essa tarefa será excluída permanentemente!',
+      icon: 'warning',
+      showCancelButton: true,
+      confirmButtonColor: '#f44336',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: 'Sim, excluir',
+      cancelButtonText: 'Cancelar'
+    });
+
+    if (result.isConfirmed) {
+      await axios.delete(`http://localhost:5000/todos/${id}`);
+      setTodos(todos.filter(todo => todo._id !== id));
+
+      await Swal.fire({
+        title: 'Excluída!',
+        text: 'A tarefa foi excluída com sucesso.',
+        icon: 'success',
+        confirmButtonText: 'OK'
+      });
+    }
   };
 
   // Carregar a lista de todos ao iniciar o componente
@@ -44,7 +65,8 @@ function App() {
   return (
     <div className="App">
       <h1>Lista de Tarefas</h1>
-      <div>
+
+      <div className="input-container">
         <input 
           type="text" 
           value={task} 
@@ -53,11 +75,22 @@ function App() {
         />
         <button onClick={addTodo}>Adicionar</button>
       </div>
+
       <ul>
         {todos.map((todo) => (
-          <li key={todo._id} style={{ textDecoration: todo.completed ? "line-through" : "none" }}>
-            <span onClick={() => toggleComplete(todo._id)}>{todo.text}</span>
-            <button onClick={() => deleteTodo(todo._id)}>Excluir</button>
+          <li key={todo._id}>
+            <span
+              onClick={() => toggleComplete(todo._id)}
+              style={{
+                textDecoration: todo.completed ? "line-through" : "none"
+              }}
+            >
+              {todo.text}
+            </span>
+
+            <button onClick={() => deleteTodo(todo._id)}>
+              Excluir
+            </button>
           </li>
         ))}
       </ul>
