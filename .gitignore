@@ -1,1 +1,16 @@
-data
+.env
+.env.local
+.env.*.local
+
+node_modules/
+npm-debug.log*
+
+build/
+dist/
+
+data/
+
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

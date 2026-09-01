@@ -1,5 +1,5 @@
 # Etapa 1: Construção da aplicação
-FROM node:18-alpine as build
+FROM node:18-alpine AS build
 
 # Definindo o diretório de trabalho dentro do container
 WORKDIR /app
