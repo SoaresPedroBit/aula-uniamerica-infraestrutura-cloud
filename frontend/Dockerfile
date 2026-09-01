@@ -13,7 +13,8 @@ RUN npm install
 # Copiando todo o conteúdo da pasta do projeto para o container
 COPY . .
 
-# Construindo a aplicação para produção
+# Construindo a aplicação para produção.
+# A URL da API vem de .env.production, lido automaticamente pelo Create React App.
 RUN npm run build
 
 # Etapa 2: Servindo a aplicação

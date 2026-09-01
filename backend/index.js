@@ -1,37 +1,37 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const { Firestore } = require('@google-cloud/firestore');
 
 // Inicializando o app Express
 const app = express();
-const port = 5000;
 
-// Conexão com o MongoDB (com autenticação)
-mongoose.connect('mongodb://root:rootpassword@mongo-todo:27017/todo-app?authSource=admin', {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-  .then(() => console.log('Conectado ao MongoDB'))
-  .catch((err) => console.error('Erro ao conectar ao MongoDB:', err));
+// A porta vem do ambiente: o Cloud Run injeta PORT (8080 por padrão)
+const port = process.env.PORT || 5000;
 
-// Middleware para habilitar CORS e processar JSON
-app.use(cors());
+// Conexão com o Firestore.
+// Não há string de conexão nem senha: a autenticação usa as credenciais
+// da service account do próprio Cloud Run (Application Default Credentials).
+const firestore = new Firestore();
+const todosCollection = firestore.collection('todos');
+
+// CORS restrito: somente o domínio do front-end pode chamar esta API.
+// Em desenvolvimento cai para o servidor local do React.
+const allowedOrigins = (process.env.ALLOWED_ORIGIN || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim());
+
+app.use(cors({ origin: allowedOrigins }));
 app.use(bodyParser.json());
 
-// Definindo o modelo de Tarefa (To-do)
-const TodoSchema = new mongoose.Schema({
-  text: { type: String, required: true },
-  completed: { type: Boolean, default: false },
-});
-
-const Todo = mongoose.model('Todo', TodoSchema);
+// Converte um documento do Firestore no formato que o front-end espera
+const toTodo = (doc) => ({ _id: doc.id, ...doc.data() });
 
 // Rota para obter todas as tarefas (GET)
 app.get('/todos', async (req, res) => {
   try {
-    const todos = await Todo.find(); // Retorna todas as tarefas do banco
-    res.json(todos);
+    const snapshot = await todosCollection.get(); // Retorna todas as tarefas do banco
+    res.json(snapshot.docs.map(toTodo));
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -46,14 +46,10 @@ app.post('/todos', async (req, res) => {
     return res.status(400).json({ message: 'O campo "text" é obrigatório' });
   }
 
-  const todo = new Todo({
-    text,
-    completed: false,
-  });
-
   try {
-    const newTodo = await todo.save(); // Salva a tarefa no banco
-    res.status(201).json(newTodo); // Retorna a tarefa criada
+    const docRef = await todosCollection.add({ text, completed: false }); // Salva a tarefa no banco
+    const doc = await docRef.get();
+    res.status(201).json(toTodo(doc)); // Retorna a tarefa criada
   } catch (err) {
     res.status(400).json({ message: err.message }); // Retorna erro se houver falha no banco de dados
   }
@@ -62,16 +58,17 @@ app.post('/todos', async (req, res) => {
 // Rota para marcar uma tarefa como concluída (PATCH)
 app.patch('/todos/:id', async (req, res) => {
   try {
-    const todo = await Todo.findById(req.params.id); // Encontra a tarefa pelo ID
+    const docRef = todosCollection.doc(req.params.id); // Encontra a tarefa pelo ID
+    const doc = await docRef.get();
 
-    if (!todo) {
+    if (!doc.exists) {
       return res.status(404).json({ message: 'Tarefa não encontrada' });
     }
 
     // Alterna o status de "completed" da tarefa
-    todo.completed = !todo.completed;
-    await todo.save(); // Salva a tarefa modificada
-    res.json(todo); // Retorna a tarefa atualizada
+    await docRef.update({ completed: !doc.data().completed });
+    const updated = await docRef.get(); // Recarrega a tarefa modificada
+    res.json(toTodo(updated)); // Retorna a tarefa atualizada
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -80,19 +77,21 @@ app.patch('/todos/:id', async (req, res) => {
 // Rota para excluir uma tarefa (DELETE)
 app.delete('/todos/:id', async (req, res) => {
   try {
-    const todo = await Todo.findByIdAndDelete(req.params.id); // Deleta a tarefa pelo ID
+    const docRef = todosCollection.doc(req.params.id);
+    const doc = await docRef.get();
 
-    if (!todo) {
+    if (!doc.exists) {
       return res.status(404).json({ message: 'Tarefa não encontrada' });
     }
 
+    await docRef.delete(); // Deleta a tarefa pelo ID
     res.json({ message: 'Tarefa excluída com sucesso' }); // Retorna uma mensagem de sucesso
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
 });
 
-// Iniciando o servidor na porta 5000
+// Iniciando o servidor
 app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`);
 });

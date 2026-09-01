@@ -1,0 +1,13 @@
+{
+  "name": "proxy-reverso",
+  "version": "1.0.0",
+  "description": "Proxy reverso na Vercel: encaminha os subdominios para o Cloud Run e autentica as chamadas ao back-end privado",
+  "private": true,
+  "license": "ISC",
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "google-auth-library": "^9.15.0"
+  }
+}

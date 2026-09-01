@@ -1,0 +1,13 @@
+{
+  "name": "banco-de-dados",
+  "version": "1.0.0",
+  "description": "Script de carga inicial da coleção todos no Firestore",
+  "main": "seed-firestore.js",
+  "scripts": {
+    "seed": "node seed-firestore.js"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@google-cloud/firestore": "^7.11.0"
+  }
+}
