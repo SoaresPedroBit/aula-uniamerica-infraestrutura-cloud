@@ -11,7 +11,8 @@
 // A identidade e obtida por Workload Identity Federation, sem nenhuma chave de
 // longa duracao no repositorio ou nas variaveis de ambiente. O caminho e:
 //
-//   1. a Vercel injeta VERCEL_OIDC_TOKEN no runtime, com validade curta
+//   1. a Vercel entrega um token OIDC de validade curta no cabecalho
+//      x-vercel-oidc-token de cada requisicao
 //   2. esse token e trocado no STS do Google por um token de acesso federado
 //   3. o token federado gera um token de identidade em nome da proxy-sa
 //   4. o token de identidade acompanha a requisicao ao Cloud Run
@@ -74,8 +75,10 @@ async function gerarTokenDeIdentidade(tokenFederado, audience) {
   return (await resp.json()).token;
 }
 
-async function getAuthHeaders(audience) {
-  const tokenVercel = process.env.VERCEL_OIDC_TOKEN;
+async function getAuthHeaders(audience, req) {
+  // Em producao a Vercel entrega o token no cabecalho da requisicao; a variavel
+  // de ambiente so existe em desenvolvimento local (vercel env pull).
+  const tokenVercel = req.headers['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN;
 
   // Sem token da Vercel nao ha identidade a federar. Isso so acontece em teste
   // local: em producao a ausencia do cabecalho faz o Cloud Run recusar com 403,
@@ -108,6 +111,9 @@ const HOP_BY_HOP = new Set([
   'trailer',
   'content-length',
   'authorization',
+  // Credencial da Vercel: e consumida aqui para gerar o token do Google e
+  // jamais pode seguir adiante, sob risco de vazar identidade ao destino.
+  'x-vercel-oidc-token',
 ]);
 
 function repassarCabecalhos(req) {
@@ -165,7 +171,7 @@ module.exports = async (req, res) => {
         return res.status(503).json({ message: 'BACKEND_URL nao configurada' });
       }
 
-      const auth = await getAuthHeaders(BACKEND_URL);
+      const auth = await getAuthHeaders(BACKEND_URL, req);
       const upstream = await encaminhar(BACKEND_URL, req, auth);
       return responder(res, upstream);
     }
@@ -183,7 +189,7 @@ module.exports = async (req, res) => {
       try {
         // As duas regioes tambem sobem privadas, para que o front-end so possa
         // ser alcancado pelo dominio configurado e nunca pela URL .run.app.
-        const auth = await getAuthHeaders(regiao);
+        const auth = await getAuthHeaders(regiao, req);
         const upstream = await encaminhar(regiao, req, auth);
 
         // 5xx indica regiao doente: tenta a proxima antes de desistir
