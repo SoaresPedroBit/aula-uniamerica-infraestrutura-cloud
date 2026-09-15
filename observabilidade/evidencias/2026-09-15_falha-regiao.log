@@ -1,0 +1,55 @@
+== Falha controlada: regiao do front-end ==
+inicio: 2026-09-15 19:42:57 -03 (22:42:57 UTC)
+revisao saudavel atual: frontend-00003-4kh
+
+-- estado inicial: qual regiao atende --
+regiao: https://frontend-lnjz6zmyda-rj.a.run.app
+
+-- implantando revisao defeituosa em southamerica-east1 --
+Service [frontend] revision [frontend-00006-tih] has been deployed and is serving 0 percent of traffic.
+
+-- enviando 100% do trafego de southamerica-east1 para frontend-00006-tih --
+Routing traffic.........................done
+
+-- durante a falha: o usuario ve erro? --
+req 1: HTTP 200  atendida por: https://frontend-lnjz6zmyda-uc.a.run.app
+req 2: HTTP 200  atendida por: https://frontend-lnjz6zmyda-uc.a.run.app
+req 3: HTTP 200  atendida por: https://frontend-lnjz6zmyda-uc.a.run.app
+req 4: HTTP 200  atendida por: https://frontend-lnjz6zmyda-uc.a.run.app
+req 5: HTTP 200  atendida por: https://frontend-lnjz6zmyda-uc.a.run.app
+req 6: HTTP 200  atendida por: https://frontend-lnjz6zmyda-uc.a.run.app
+req 7: HTTP 200  atendida por: https://frontend-lnjz6zmyda-uc.a.run.app
+req 8: HTTP 200  atendida por: https://frontend-lnjz6zmyda-uc.a.run.app
+
+-- a API continua disponivel durante a queda do front-end? --
+GET /todos -> 200
+
+fim da janela de falha: 2026-09-15 19:44:45 -03 (22:44:46 UTC)
+
+-- devolvendo 100% do trafego a revisao saudavel (frontend-00003-4kh) --
+(concluido; confirmado em seguida por consulta ao servico)
+
+== Estado apos a restauracao ==
+trafego em southamerica-east1: 100% frontend-00003-4kh
+requisicoes pelo dominio: 200, atendidas por frontend-lnjz6zmyda-rj (Sao Paulo)
+API: 200
+
+Revisao defeituosa frontend-00006-tih removida. Como o Cloud Run nao permite
+apagar a revisao mais recente, foi preciso antes implantar uma revisao saudavel
+(frontend-00005-cb5) a partir de ./frontend.
+
+== Resultado no painel 6 (janela 19:25-19:50 -03) ==
+target=backend            target_region=southamerica-east1                    82
+target=frontend_primario  target_region=southamerica-east1                    55
+target=frontend_secundario target_region=us-central1                          24
+
+eventos de failover:
+error_type=regiao_respondeu_5xx failover=false                                26
+failover=false                                                                 7
+failover=true                                                                 24
+
+Esperado: a serie failover=true sair de zero e o trafego deslocar-se para
+us-central1, sem que o usuario veja erro.
+Observado: exatamente isso. As 26 recusas da primaria sao as tentativas que
+receberam 503 antes de o proxy recorrer a segunda regiao, dentro do mesmo ciclo
+de requisicao.

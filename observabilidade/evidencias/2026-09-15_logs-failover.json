@@ -1,0 +1,114 @@
+[
+  {
+    "insertId": "1fc0baog1079gl4",
+    "jsonPayload": {
+      "duration_ms": 181,
+      "env": "production",
+      "event": "proxy_forward",
+      "failover": true,
+      "host": "200status.soarespedro.com.br",
+      "method": "GET",
+      "path_prefix": "/",
+      "service": "proxy",
+      "status": 200,
+      "status_class": "2xx",
+      "target": "frontend_secundario",
+      "target_region": "us-central1",
+      "tentativas": 2
+    },
+    "logName": "projects/mensal2/logs/proxy-vercel",
+    "receiveTimestamp": "2026-09-15T22:44:40.048035533Z",
+    "resource": {
+      "labels": {
+        "project_id": "mensal2"
+      },
+      "type": "global"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:44:40.016Z"
+  },
+  {
+    "insertId": "wgsvjmfb14rhu",
+    "jsonPayload": {
+      "duration_ms": 174,
+      "env": "production",
+      "event": "proxy_forward",
+      "failover": true,
+      "host": "200status.soarespedro.com.br",
+      "method": "GET",
+      "path_prefix": "/",
+      "service": "proxy",
+      "status": 200,
+      "status_class": "2xx",
+      "target": "frontend_secundario",
+      "target_region": "us-central1",
+      "tentativas": 2
+    },
+    "logName": "projects/mensal2/logs/proxy-vercel",
+    "receiveTimestamp": "2026-09-15T22:44:39.150239515Z",
+    "resource": {
+      "labels": {
+        "project_id": "mensal2"
+      },
+      "type": "global"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:44:39.125Z"
+  },
+  {
+    "insertId": "11qm36qfxvk288",
+    "jsonPayload": {
+      "duration_ms": 169,
+      "env": "production",
+      "event": "proxy_forward",
+      "failover": true,
+      "host": "200status.soarespedro.com.br",
+      "method": "GET",
+      "path_prefix": "/",
+      "service": "proxy",
+      "status": 200,
+      "status_class": "2xx",
+      "target": "frontend_secundario",
+      "target_region": "us-central1",
+      "tentativas": 2
+    },
+    "logName": "projects/mensal2/logs/proxy-vercel",
+    "receiveTimestamp": "2026-09-15T22:44:38.045465684Z",
+    "resource": {
+      "labels": {
+        "project_id": "mensal2"
+      },
+      "type": "global"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:44:38.022Z"
+  },
+  {
+    "insertId": "1wtechbfwru5a8",
+    "jsonPayload": {
+      "duration_ms": 173,
+      "env": "production",
+      "event": "proxy_forward",
+      "failover": true,
+      "host": "200status.soarespedro.com.br",
+      "method": "GET",
+      "path_prefix": "/",
+      "service": "proxy",
+      "status": 200,
+      "status_class": "2xx",
+      "target": "frontend_secundario",
+      "target_region": "us-central1",
+      "tentativas": 2
+    },
+    "logName": "projects/mensal2/logs/proxy-vercel",
+    "receiveTimestamp": "2026-09-15T22:44:36.865912159Z",
+    "resource": {
+      "labels": {
+        "project_id": "mensal2"
+      },
+      "type": "global"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:44:36.843Z"
+  }
+]
