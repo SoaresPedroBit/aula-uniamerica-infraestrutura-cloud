@@ -1,0 +1,26 @@
+{
+  "displayName": "frontend-dominio",
+  "monitoredResource": {
+    "type": "uptime_url",
+    "labels": {
+      "project_id": "mensal2",
+      "host": "200status.soarespedro.com.br"
+    }
+  },
+  "httpCheck": {
+    "requestMethod": "GET",
+    "path": "/",
+    "port": 443,
+    "useSsl": true,
+    "validateSsl": true
+  },
+  "contentMatchers": [
+    {
+      "content": "Lista de Tarefas",
+      "matcher": "CONTAINS_STRING"
+    }
+  ],
+  "period": "300s",
+  "timeout": "10s",
+  "selectedRegions": ["USA_OREGON", "USA_VIRGINIA", "SOUTH_AMERICA", "EUROPE"]
+}

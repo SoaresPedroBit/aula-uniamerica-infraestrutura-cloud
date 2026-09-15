@@ -1,0 +1,38 @@
+# Duracao e desfecho das operacoes do back-end contra o Firestore.
+#
+# Alimenta o painel de Banco de dados. O alcance e explicito: mede o que o
+# back-end observa, do inicio ao fim da chamada ao SDK. Inclui, portanto, a
+# latencia de rede ate o servico gerenciado, e nao apenas o tempo interno do
+# Firestore.
+description: >-
+  Distribuicao da duracao das operacoes no Firestore vistas pelo back-end,
+  com o desfecho de cada uma (success ou error).
+filter: |-
+  resource.type="cloud_run_revision"
+  resource.labels.service_name="backend"
+  jsonPayload.event="db_operation"
+valueExtractor: EXTRACT(jsonPayload.duration_ms)
+labelExtractors:
+  operation: EXTRACT(jsonPayload.operation)
+  result: EXTRACT(jsonPayload.result)
+  error_type: EXTRACT(jsonPayload.error_type)
+metricDescriptor:
+  metricKind: DELTA
+  valueType: DISTRIBUTION
+  unit: ms
+  displayName: Duracao das operacoes no Firestore
+  labels:
+    - key: operation
+      valueType: STRING
+      description: Operacao no banco (listar, inserir, ler_documento, atualizar, excluir)
+    - key: result
+      valueType: STRING
+      description: Desfecho da operacao (success, error)
+    - key: error_type
+      valueType: STRING
+      description: Codigo do erro quando houve falha (7 = PERMISSION_DENIED); vazio em sucesso
+bucketOptions:
+  exponentialBuckets:
+    numFiniteBuckets: 16
+    growthFactor: 2
+    scale: 1

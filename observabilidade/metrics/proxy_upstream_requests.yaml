@@ -1,0 +1,38 @@
+# Encaminhamentos feitos pelo proxy reverso, por destino e regiao.
+#
+# Alimenta o painel de Redundancia. E a unica metrica cuja origem esta fora do
+# Google Cloud: o proxy roda na Vercel e escreve no Cloud Logging pela mesma
+# identidade federada que ja usava para invocar o Cloud Run.
+description: >-
+  Contagem de encaminhamentos do proxy reverso, rotulada pelo destino, pela
+  regiao que atendeu, pela classe da resposta e por ter havido failover.
+filter: |-
+  logName="projects/mensal2/logs/proxy-vercel"
+  jsonPayload.event="proxy_forward"
+labelExtractors:
+  target: EXTRACT(jsonPayload.target)
+  target_region: EXTRACT(jsonPayload.target_region)
+  status_class: EXTRACT(jsonPayload.status_class)
+  failover: EXTRACT(jsonPayload.failover)
+  error_type: EXTRACT(jsonPayload.error_type)
+metricDescriptor:
+  metricKind: DELTA
+  valueType: INT64
+  unit: '1'
+  displayName: Encaminhamentos do proxy reverso
+  labels:
+    - key: target
+      valueType: STRING
+      description: Destino (backend, frontend_primario, frontend_secundario)
+    - key: target_region
+      valueType: STRING
+      description: Regiao do Cloud Run que atendeu (southamerica-east1, us-central1)
+    - key: status_class
+      valueType: STRING
+      description: Classe da resposta do destino (2xx, 4xx, 5xx)
+    - key: failover
+      valueType: STRING
+      description: true quando a requisicao so foi atendida apos a falha de uma regiao anterior
+    - key: error_type
+      valueType: STRING
+      description: Motivo da recusa quando o encaminhamento falhou; vazio em sucesso

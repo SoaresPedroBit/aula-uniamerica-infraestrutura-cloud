@@ -1,0 +1,39 @@
+# Contagem de requisicoes atendidas pelo back-end.
+#
+# Alimenta os paineis de Erros (numerador e denominador da taxa) e de Uso
+# (volume por operacao de negocio). E um contador separado da distribuicao
+# porque a razao entre duas somas filtradas e mais direta de expressar assim.
+description: >-
+  Contagem de requisicoes HTTP do back-end, uma por registro http_request,
+  rotulada por rota, metodo, classe de resposta, operacao e tipo de cliente.
+filter: |-
+  resource.type="cloud_run_revision"
+  resource.labels.service_name="backend"
+  jsonPayload.event="http_request"
+labelExtractors:
+  route: EXTRACT(jsonPayload.route)
+  method: EXTRACT(jsonPayload.method)
+  status_class: EXTRACT(jsonPayload.status_class)
+  operation: EXTRACT(jsonPayload.operation)
+  client: EXTRACT(jsonPayload.client)
+metricDescriptor:
+  metricKind: DELTA
+  valueType: INT64
+  unit: '1'
+  displayName: Requisicoes do back-end
+  labels:
+    - key: route
+      valueType: STRING
+      description: Rota padronizada (/todos, /todos/:id)
+    - key: method
+      valueType: STRING
+      description: Metodo HTTP
+    - key: status_class
+      valueType: STRING
+      description: Classe da resposta (2xx, 4xx, 5xx)
+    - key: operation
+      valueType: STRING
+      description: Nome de negocio da operacao
+    - key: client
+      valueType: STRING
+      description: Origem da chamada (app, uptime, bot)

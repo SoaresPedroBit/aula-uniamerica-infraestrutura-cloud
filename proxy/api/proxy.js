@@ -20,6 +20,12 @@
 // O passo 3 so funciona porque a condicao de atributo do provedor exige que o
 // claim "sub" venha do deploy de producao deste projeto Vercel.
 
+const {
+  registrarEncaminhamento,
+  regiaoDoDestino,
+  prefixoDoCaminho,
+} = require('../lib/observabilidade');
+
 const STS_URL = 'https://sts.googleapis.com/v1/token';
 const IAM_CREDENTIALS_URL = 'https://iamcredentials.googleapis.com/v1';
 
@@ -42,6 +48,12 @@ const FRONTEND_SECONDARY = env('FRONTEND_URL_SECONDARY');
 // folga, para nao repetir as duas chamadas de rede a cada requisicao.
 const MARGEM_RENOVACAO_MS = 5 * 60 * 1000;
 const tokensPorDestino = new Map();
+
+// O token de acesso federado passou a ser reaproveitado. Antes era usado uma
+// unica vez para gerar o token de identidade e descartado; agora ele tambem
+// autentica a escrita no Cloud Logging, e cachea-lo evita uma ida ao STS por
+// requisicao.
+let tokenFederadoEmCache = null;
 
 async function trocarTokenNoSTS(tokenVercel) {
   const resp = await fetch(STS_URL, {
@@ -66,7 +78,12 @@ async function trocarTokenNoSTS(tokenVercel) {
     );
   }
 
-  return (await resp.json()).access_token;
+  const dados = await resp.json();
+  return {
+    token: dados.access_token,
+    // expires_in vem em segundos; na ausencia dele assume-se o minimo seguro.
+    expiraEm: Date.now() + (Number(dados.expires_in) || 600) * 1000,
+  };
 }
 
 async function gerarTokenDeIdentidade(tokenFederado, audience) {
@@ -91,7 +108,9 @@ async function gerarTokenDeIdentidade(tokenFederado, audience) {
   return (await resp.json()).token;
 }
 
-async function getAuthHeaders(audience, req) {
+// Token de acesso federado, usado tanto para gerar tokens de identidade quanto
+// para escrever no Cloud Logging.
+async function getTokenFederado(req) {
   // Em producao a Vercel entrega o token no cabecalho da requisicao; a variavel
   // de ambiente so existe em desenvolvimento local (vercel env pull).
   const tokenVercel = req.headers['x-vercel-oidc-token'] || process.env.VERCEL_OIDC_TOKEN;
@@ -99,14 +118,25 @@ async function getAuthHeaders(audience, req) {
   // Sem token da Vercel nao ha identidade a federar. Isso so acontece em teste
   // local: em producao a ausencia do cabecalho faz o Cloud Run recusar com 403,
   // ou seja, a falha e fechada, nunca aberta.
-  if (!tokenVercel || !WIF_AUDIENCE || !SERVICE_ACCOUNT) return {};
+  if (!tokenVercel || !WIF_AUDIENCE || !SERVICE_ACCOUNT) return null;
+
+  if (tokenFederadoEmCache && tokenFederadoEmCache.expiraEm > Date.now() + MARGEM_RENOVACAO_MS) {
+    return tokenFederadoEmCache.token;
+  }
+
+  tokenFederadoEmCache = await trocarTokenNoSTS(tokenVercel);
+  return tokenFederadoEmCache.token;
+}
+
+async function getAuthHeaders(audience, req) {
+  const tokenFederado = await getTokenFederado(req);
+  if (!tokenFederado) return {};
 
   const emCache = tokensPorDestino.get(audience);
   if (emCache && emCache.expiraEm > Date.now() + MARGEM_RENOVACAO_MS) {
     return { Authorization: `Bearer ${emCache.token}` };
   }
 
-  const tokenFederado = await trocarTokenNoSTS(tokenVercel);
   const token = await gerarTokenDeIdentidade(tokenFederado, audience);
 
   tokensPorDestino.set(audience, { token, expiraEm: Date.now() + 60 * 60 * 1000 });
@@ -179,16 +209,40 @@ async function responder(res, upstream) {
 
 module.exports = async (req, res) => {
   const host = (req.headers.host || '').toLowerCase();
+  const inicio = Date.now();
+
+  // Fechamento que entrega o token de acesso ao modulo de observabilidade sem
+  // que ele precise conhecer a cadeia de federacao.
+  const obterToken = () => getTokenFederado(req).catch(() => null);
+
+  const registrar = (dados) =>
+    registrarEncaminhamento(obterToken, {
+      host,
+      method: req.method,
+      path_prefix: prefixoDoCaminho(req.url),
+      duration_ms: Date.now() - inicio,
+      ...dados,
+    });
 
   try {
     // ---- Rota da API: back-end privado ----
     if (host.startsWith('api.')) {
       if (!BACKEND_URL) {
+        registrar({ target: 'backend', status: 503, error_type: 'backend_url_ausente' });
         return res.status(503).json({ message: 'BACKEND_URL nao configurada' });
       }
 
       const auth = await getAuthHeaders(BACKEND_URL, req);
       const upstream = await encaminhar(BACKEND_URL, req, auth);
+
+      registrar({
+        target: 'backend',
+        target_region: regiaoDoDestino(BACKEND_URL),
+        status: upstream.status,
+        failover: false,
+        tentativas: 1,
+      });
+
       return responder(res, upstream);
     }
 
@@ -196,12 +250,17 @@ module.exports = async (req, res) => {
     const regioes = [FRONTEND_PRIMARY, FRONTEND_SECONDARY].filter(Boolean);
 
     if (regioes.length === 0) {
+      registrar({ target: 'frontend', status: 503, error_type: 'nenhuma_regiao_configurada' });
       return res.status(503).json({ message: 'Nenhuma regiao de front-end configurada' });
     }
 
     let ultimoErro;
+    let tentativas = 0;
 
     for (const regiao of regioes) {
+      tentativas += 1;
+      const ehPrimaria = tentativas === 1;
+
       try {
         // As duas regioes tambem sobem privadas, para que o front-end so possa
         // ser alcancado pelo dominio configurado e nunca pela URL .run.app.
@@ -210,22 +269,57 @@ module.exports = async (req, res) => {
 
         // 5xx indica regiao doente: tenta a proxima antes de desistir
         if (upstream.status >= 500 && regiao !== regioes[regioes.length - 1]) {
+          // A tentativa recusada tambem vira registro: e ela que revela o
+          // momento exato em que a regiao adoeceu, e nao apenas que o usuario
+          // acabou atendido.
+          registrar({
+            target: 'frontend_primario',
+            target_region: regiaoDoDestino(regiao),
+            status: upstream.status,
+            failover: false,
+            tentativas,
+            error_type: 'regiao_respondeu_5xx',
+          });
           ultimoErro = new Error(`Regiao ${regiao} respondeu ${upstream.status}`);
           continue;
         }
+
+        registrar({
+          target: ehPrimaria ? 'frontend_primario' : 'frontend_secundario',
+          target_region: regiaoDoDestino(regiao),
+          status: upstream.status,
+          // A requisicao so e failover se alguma regiao anterior ja falhou.
+          failover: !ehPrimaria,
+          tentativas,
+        });
 
         res.setHeader('X-Origem-Regiao', regiao);
         return responder(res, upstream);
       } catch (err) {
         // Falha de rede: cai para a proxima regiao
+        registrar({
+          target: ehPrimaria ? 'frontend_primario' : 'frontend_secundario',
+          target_region: regiaoDoDestino(regiao),
+          failover: !ehPrimaria,
+          tentativas,
+          error_type: 'falha_de_rede',
+        });
         ultimoErro = err;
       }
     }
 
     console.error('Todas as regioes do front-end falharam:', ultimoErro && ultimoErro.message);
+    registrar({
+      target: 'frontend',
+      status: 502,
+      failover: true,
+      tentativas,
+      error_type: 'todas_as_regioes_falharam',
+    });
     return res.status(502).json({ message: 'Front-end indisponivel em todas as regioes' });
   } catch (err) {
     console.error('Erro no proxy:', err);
+    registrar({ status: 502, error_type: 'erro_no_proxy' });
     return res.status(502).json({ message: 'Erro ao encaminhar a requisicao' });
   }
 };

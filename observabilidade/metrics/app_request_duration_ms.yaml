@@ -1,0 +1,47 @@
+# Duracao das requisicoes atendidas pelo back-end, em milissegundos.
+#
+# Alimenta o painel de Desempenho (percentis por operacao). A distribuicao e
+# necessaria porque a media esconde justamente o que interessa: uma media de
+# 120 ms pode conter uma cauda de 4 s que so o p95 revela.
+description: >-
+  Distribuicao da duracao das requisicoes HTTP do back-end, extraida do campo
+  duration_ms do log estruturado emitido pelo middleware de observabilidade.
+filter: |-
+  resource.type="cloud_run_revision"
+  resource.labels.service_name="backend"
+  jsonPayload.event="http_request"
+valueExtractor: EXTRACT(jsonPayload.duration_ms)
+labelExtractors:
+  route: EXTRACT(jsonPayload.route)
+  method: EXTRACT(jsonPayload.method)
+  status_class: EXTRACT(jsonPayload.status_class)
+  operation: EXTRACT(jsonPayload.operation)
+  client: EXTRACT(jsonPayload.client)
+metricDescriptor:
+  metricKind: DELTA
+  valueType: DISTRIBUTION
+  unit: ms
+  displayName: Duracao das requisicoes do back-end
+  labels:
+    - key: route
+      valueType: STRING
+      description: Rota padronizada (/todos, /todos/:id), nunca o caminho com o id concreto
+    - key: method
+      valueType: STRING
+      description: Metodo HTTP
+    - key: status_class
+      valueType: STRING
+      description: Classe da resposta (2xx, 4xx, 5xx)
+    - key: operation
+      valueType: STRING
+      description: Nome de negocio da operacao (listar_tarefas, criar_tarefa, ...)
+    - key: client
+      valueType: STRING
+      description: Origem da chamada (app, uptime, bot)
+# Buckets exponenciais de 1 ms a ~32 s: cobrem desde uma leitura rapida do
+# Firestore ate um timeout, sem precisar saber de antemao onde a latencia cai.
+bucketOptions:
+  exponentialBuckets:
+    numFiniteBuckets: 16
+    growthFactor: 2
+    scale: 1

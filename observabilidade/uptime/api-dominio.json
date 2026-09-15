@@ -1,0 +1,21 @@
+{
+  "displayName": "api-dominio",
+  "monitoredResource": {
+    "type": "uptime_url",
+    "labels": {
+      "project_id": "mensal2",
+      "host": "api.200status.soarespedro.com.br"
+    }
+  },
+  "httpCheck": {
+    "requestMethod": "GET",
+    "path": "/todos",
+    "port": 443,
+    "useSsl": true,
+    "validateSsl": true,
+    "acceptedResponseStatusCodes": [{ "statusClass": "STATUS_CLASS_2XX" }]
+  },
+  "period": "300s",
+  "timeout": "10s",
+  "selectedRegions": ["USA_OREGON", "USA_VIRGINIA", "SOUTH_AMERICA", "EUROPE"]
+}
