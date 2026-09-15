@@ -87,6 +87,12 @@ try {
   waitUntil = null;
 }
 
+// Como o ultimo registro foi entregue. Vira o cabecalho X-Obs-Entrega da
+// resposta: sem ele, um painel vazio nao distingue "o proxy nao registrou" de
+// "o codigo novo nem chegou a produzir o registro".
+let ultimaEntrega = 'nenhuma';
+const formaDeEntrega = () => ultimaEntrega;
+
 function registrarEncaminhamento(obterTokenDeAcesso, dados) {
   const severidade = dados.status >= 500 || dados.error_type ? 'ERROR' : 'INFO';
 
@@ -100,19 +106,33 @@ function registrarEncaminhamento(obterTokenDeAcesso, dados) {
 
   const tarefa = (async () => {
     const token = await obterTokenDeAcesso();
-    if (!token) return; // sem identidade federada (execucao local): nada a enviar
+    if (!token) {
+      // Sem identidade federada (execucao local): nada a enviar.
+      ultimaEntrega = 'sem_token';
+      return;
+    }
     await enviarAoCloudLogging(token, severidade, payload);
-  })().catch((err) => console.error('Observabilidade do proxy falhou:', err && err.message));
+  })().catch((err) => {
+    ultimaEntrega = 'erro';
+    console.error('Observabilidade do proxy falhou:', err && err.message);
+  });
 
   if (waitUntil) {
     try {
       waitUntil(tarefa);
+      ultimaEntrega = 'waitUntil';
+      // Ja entregue ao runtime: o handler nao precisa esperar, e o usuario nao
+      // paga a latencia do envio.
       return Promise.resolve();
     } catch {
       // Fora do contexto de requisicao da Vercel waitUntil lanca; cai no await.
     }
   }
+
+  // Sem waitUntil, quem chama precisa aguardar: se a funcao congelar antes do
+  // envio, o registro se perde. Um log lento e melhor que um log perdido.
+  ultimaEntrega = 'await';
   return tarefa;
 }
 
-module.exports = { registrarEncaminhamento, regiaoDoDestino, prefixoDoCaminho };
+module.exports = { registrarEncaminhamento, regiaoDoDestino, prefixoDoCaminho, formaDeEntrega };

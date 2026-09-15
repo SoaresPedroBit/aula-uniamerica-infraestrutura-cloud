@@ -24,6 +24,7 @@ const {
   registrarEncaminhamento,
   regiaoDoDestino,
   prefixoDoCaminho,
+  formaDeEntrega,
 } = require('../lib/observabilidade');
 
 const STS_URL = 'https://sts.googleapis.com/v1/token';
@@ -215,21 +216,38 @@ module.exports = async (req, res) => {
   // que ele precise conhecer a cadeia de federacao.
   const obterToken = () => getTokenFederado(req).catch(() => null);
 
-  const registrar = (dados) =>
-    registrarEncaminhamento(obterToken, {
-      host,
-      method: req.method,
-      path_prefix: prefixoDoCaminho(req.url),
-      duration_ms: Date.now() - inicio,
-      ...dados,
-    });
+  // Registros ainda nao entregues. Com waitUntil disponivel eles ja resolvem
+  // de imediato; sem ele, sao aguardados antes da resposta para que a funcao
+  // serverless nao congele com o envio pela metade.
+  const pendencias = [];
+
+  const registrar = (dados) => {
+    pendencias.push(
+      registrarEncaminhamento(obterToken, {
+        host,
+        method: req.method,
+        path_prefix: prefixoDoCaminho(req.url),
+        duration_ms: Date.now() - inicio,
+        ...dados,
+      })
+    );
+  };
+
+  // Torna observavel o proprio caminho da observabilidade: se o painel de
+  // redundancia aparecer vazio, este cabecalho diz se o registro chegou a ser
+  // produzido e por qual via foi entregue.
+  const concluir = async (enviar) => {
+    await Promise.all(pendencias);
+    res.setHeader('X-Obs-Entrega', formaDeEntrega());
+    return enviar();
+  };
 
   try {
     // ---- Rota da API: back-end privado ----
     if (host.startsWith('api.')) {
       if (!BACKEND_URL) {
         registrar({ target: 'backend', status: 503, error_type: 'backend_url_ausente' });
-        return res.status(503).json({ message: 'BACKEND_URL nao configurada' });
+        return concluir(() => res.status(503).json({ message: 'BACKEND_URL nao configurada' }));
       }
 
       const auth = await getAuthHeaders(BACKEND_URL, req);
@@ -243,7 +261,7 @@ module.exports = async (req, res) => {
         tentativas: 1,
       });
 
-      return responder(res, upstream);
+      return concluir(() => responder(res, upstream));
     }
 
     // ---- Rota do front-end: duas regioes, com failover ----
@@ -251,7 +269,7 @@ module.exports = async (req, res) => {
 
     if (regioes.length === 0) {
       registrar({ target: 'frontend', status: 503, error_type: 'nenhuma_regiao_configurada' });
-      return res.status(503).json({ message: 'Nenhuma regiao de front-end configurada' });
+      return concluir(() => res.status(503).json({ message: 'Nenhuma regiao de front-end configurada' }));
     }
 
     let ultimoErro;
@@ -294,7 +312,7 @@ module.exports = async (req, res) => {
         });
 
         res.setHeader('X-Origem-Regiao', regiao);
-        return responder(res, upstream);
+        return concluir(() => responder(res, upstream));
       } catch (err) {
         // Falha de rede: cai para a proxima regiao
         registrar({
@@ -316,10 +334,10 @@ module.exports = async (req, res) => {
       tentativas,
       error_type: 'todas_as_regioes_falharam',
     });
-    return res.status(502).json({ message: 'Front-end indisponivel em todas as regioes' });
+    return concluir(() => res.status(502).json({ message: 'Front-end indisponivel em todas as regioes' }));
   } catch (err) {
     console.error('Erro no proxy:', err);
     registrar({ status: 502, error_type: 'erro_no_proxy' });
-    return res.status(502).json({ message: 'Erro ao encaminhar a requisicao' });
+    return concluir(() => res.status(502).json({ message: 'Erro ao encaminhar a requisicao' }));
   }
 };
