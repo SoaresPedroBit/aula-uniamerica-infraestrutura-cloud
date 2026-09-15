@@ -1,0 +1,34 @@
+== Falha controlada: acesso ao banco ==
+inicio: 2026-09-15 19:26:18 -03 (22:26:18 UTC)
+
+estado inicial: GET /todos -> 200
+
+-- removendo roles/datastore.user de backend-sa@mensal2.iam.gserviceaccount.com --
+Updated IAM policy for project [mensal2].
+removido em 2026-09-15 19:26:27 -03 (22:26:27 UTC); aguardando propagacao...
+
+-- requisicoes durante a falha --
+tentativa 1: GET /todos -> 200
+tentativa 1: POST /todos -> 400
+tentativa 2: GET /todos -> 200
+tentativa 2: POST /todos -> 400
+tentativa 3: GET /todos -> 500
+tentativa 3: POST /todos -> 400
+tentativa 4: GET /todos -> 500
+tentativa 4: POST /todos -> 400
+tentativa 5: GET /todos -> 200
+tentativa 5: POST /todos -> 400
+tentativa 6: GET /todos -> 200
+tentativa 6: POST /todos -> 400
+tentativa 7: GET /todos -> 500
+tentativa 7: POST /todos -> 400
+tentativa 8: GET /todos -> 500
+tentativa 8: POST /todos -> 400
+
+fim da janela de falha: 2026-09-15 19:27:46 -03 (22:27:46 UTC)
+Esperado: 500 nas requisicoes, e db_operation com result=error e
+error_type=7 (PERMISSION_DENIED) no painel 5.
+
+-- restaurando roles/datastore.user para backend-sa@mensal2.iam.gserviceaccount.com --
+restaurado em 2026-09-15 19:27:53 -03 (22:27:53 UTC); aguardando propagacao...
+verificacao final: GET /todos -> 500

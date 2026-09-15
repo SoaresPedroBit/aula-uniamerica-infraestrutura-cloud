@@ -1,0 +1,107 @@
+[
+  {
+    "insertId": "6aa9c6ce000f0661c4fbe3c8",
+    "jsonPayload": {
+      "collection": "todos",
+      "duration_ms": 20.71,
+      "env": "producao",
+      "error_message": "7 PERMISSION_DENIED: Missing or insufficient permissions.",
+      "error_type": "7",
+      "event": "db_operation",
+      "message": "firestore listar falhou",
+      "operation": "listar",
+      "region": "southamerica-east1",
+      "request_id": "bf7cf3623dc5d669567da1c939dfd7e9",
+      "result": "error",
+      "service": "backend"
+    },
+    "labels": {
+      "instanceId": "00a41e8c1d973832d1200713e054ecf82b8dec326348f3e5dc1e4d1b91b7478f03c04720aada94a35c4dacc3352bfdba0df047405640e3213ab171467ce299739eecdd181e6933c47132df9ab65749d28d451b234b"
+    },
+    "logName": "projects/mensal2/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2026-09-15T22:29:34.989351699Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "backend",
+        "location": "southamerica-east1",
+        "project_id": "mensal2",
+        "revision_name": "backend-00002-j6k",
+        "service_name": "backend"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-09-15T22:29:34.984673Z",
+    "trace": "projects/mensal2/traces/bf7cf3623dc5d669567da1c939dfd7e9"
+  },
+  {
+    "insertId": "6aa9c6b9000b8a86be2df0ae",
+    "jsonPayload": {
+      "collection": "todos",
+      "duration_ms": 40.62,
+      "env": "producao",
+      "error_message": "7 PERMISSION_DENIED: Missing or insufficient permissions.",
+      "error_type": "7",
+      "event": "db_operation",
+      "message": "firestore listar falhou",
+      "operation": "listar",
+      "region": "southamerica-east1",
+      "request_id": "9ed1e0355c41bc55e95c394cdfc82ad1",
+      "result": "error",
+      "service": "backend"
+    },
+    "labels": {
+      "instanceId": "00a41e8c1d973832d1200713e054ecf82b8dec326348f3e5dc1e4d1b91b7478f03c04720aada94a35c4dacc3352bfdba0df047405640e3213ab171467ce299739eecdd181e6933c47132df9ab65749d28d451b234b"
+    },
+    "logName": "projects/mensal2/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2026-09-15T22:29:13.760164258Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "backend",
+        "location": "southamerica-east1",
+        "project_id": "mensal2",
+        "revision_name": "backend-00002-j6k",
+        "service_name": "backend"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-09-15T22:29:13.756358Z",
+    "trace": "projects/mensal2/traces/9ed1e0355c41bc55e95c394cdfc82ad1"
+  },
+  {
+    "insertId": "6aa9c6920005563271e06745",
+    "jsonPayload": {
+      "collection": "todos",
+      "duration_ms": 29.67,
+      "env": "producao",
+      "error_message": "7 PERMISSION_DENIED: Missing or insufficient permissions.",
+      "error_type": "7",
+      "event": "db_operation",
+      "message": "firestore listar falhou",
+      "operation": "listar",
+      "region": "southamerica-east1",
+      "request_id": "c57a7eef8976194851e7e863a6c80f4b",
+      "result": "error",
+      "service": "backend"
+    },
+    "labels": {
+      "instanceId": "00a41e8c1d973832d1200713e054ecf82b8dec326348f3e5dc1e4d1b91b7478f03c04720aada94a35c4dacc3352bfdba0df047405640e3213ab171467ce299739eecdd181e6933c47132df9ab65749d28d451b234b"
+    },
+    "logName": "projects/mensal2/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2026-09-15T22:28:34.352498417Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "backend",
+        "location": "southamerica-east1",
+        "project_id": "mensal2",
+        "revision_name": "backend-00002-j6k",
+        "service_name": "backend"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "ERROR",
+    "timestamp": "2026-09-15T22:28:34.349746Z",
+    "trace": "projects/mensal2/traces/c57a7eef8976194851e7e863a6c80f4b"
+  }
+]

@@ -1,0 +1,86 @@
+[
+  {
+    "insertId": "13oik47fbndrdy",
+    "jsonPayload": {
+      "duration_ms": 159,
+      "env": "production",
+      "event": "proxy_forward",
+      "failover": false,
+      "host": "200status.soarespedro.com.br",
+      "method": "GET",
+      "path_prefix": "/",
+      "service": "proxy",
+      "status": 200,
+      "status_class": "2xx",
+      "target": "frontend_primario",
+      "target_region": "southamerica-east1",
+      "tentativas": 1
+    },
+    "logName": "projects/mensal2/logs/proxy-vercel",
+    "receiveTimestamp": "2026-09-15T22:35:13.183138373Z",
+    "resource": {
+      "labels": {
+        "project_id": "mensal2"
+      },
+      "type": "global"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:35:13.145Z"
+  },
+  {
+    "insertId": "mr6rg5fbg5itf",
+    "jsonPayload": {
+      "duration_ms": 190,
+      "env": "production",
+      "event": "proxy_forward",
+      "failover": false,
+      "host": "api.200status.soarespedro.com.br",
+      "method": "GET",
+      "path_prefix": "/todos",
+      "service": "proxy",
+      "status": 200,
+      "status_class": "2xx",
+      "target": "backend",
+      "target_region": "southamerica-east1",
+      "tentativas": 1
+    },
+    "logName": "projects/mensal2/logs/proxy-vercel",
+    "receiveTimestamp": "2026-09-15T22:34:19.537665570Z",
+    "resource": {
+      "labels": {
+        "project_id": "mensal2"
+      },
+      "type": "global"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:34:19.502Z"
+  },
+  {
+    "insertId": "2a4x26fes55a5",
+    "jsonPayload": {
+      "duration_ms": 143,
+      "env": "production",
+      "event": "proxy_forward",
+      "failover": false,
+      "host": "200status.soarespedro.com.br",
+      "method": "GET",
+      "path_prefix": "/",
+      "service": "proxy",
+      "status": 200,
+      "status_class": "2xx",
+      "target": "frontend_primario",
+      "target_region": "southamerica-east1",
+      "tentativas": 1
+    },
+    "logName": "projects/mensal2/logs/proxy-vercel",
+    "receiveTimestamp": "2026-09-15T22:34:08.090326434Z",
+    "resource": {
+      "labels": {
+        "project_id": "mensal2"
+      },
+      "type": "global"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:34:08.049Z"
+  }
+]

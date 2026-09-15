@@ -1,0 +1,642 @@
+{
+  "displayName": "200status - Observabilidade",
+  "dashboardFilters": [],
+  "mosaicLayout": {
+    "columns": 12,
+    "tiles": [
+      {
+        "xPos": 0,
+        "yPos": 0,
+        "width": 12,
+        "height": 1,
+        "widget": {
+          "text": {
+            "content": "### 1. Disponibilidade - a aplicacao esta acessivel pelo dominio configurado?\nVerificacoes sinteticas a cada 5 min, de 4 regioes do mundo, contra `200status.soarespedro.com.br` e `api.200status.soarespedro.com.br`. O check da API percorre proxy -> back-end -> Firestore. **Lacuna aqui significa falha de coleta, nao silencio da aplicacao:** este e o unico painel que produz dados mesmo sem usuario algum.",
+            "format": "MARKDOWN",
+            "style": {
+              "backgroundColor": "#F1F3F4",
+              "textColor": "#202124",
+              "horizontalAlignment": "H_LEFT",
+              "verticalAlignment": "V_CENTER",
+              "padding": "P_EXTRA_SMALL",
+              "fontSize": "FS_MEDIUM"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 1,
+        "width": 3,
+        "height": 4,
+        "widget": {
+          "title": "Disponibilidade nas ultimas 24 h",
+          "scorecard": {
+            "timeSeriesQuery": {
+              "timeSeriesFilter": {
+                "filter": "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" resource.type=\"uptime_url\"",
+                "aggregation": {
+                  "alignmentPeriod": "86400s",
+                  "perSeriesAligner": "ALIGN_FRACTION_TRUE",
+                  "crossSeriesReducer": "REDUCE_MEAN"
+                }
+              }
+            },
+            "sparkChartView": {
+              "sparkChartType": "SPARK_LINE"
+            },
+            "thresholds": [
+              {
+                "value": 0.99,
+                "color": "YELLOW",
+                "direction": "BELOW",
+                "label": "atencao: abaixo de 99%"
+              },
+              {
+                "value": 0.95,
+                "color": "RED",
+                "direction": "BELOW",
+                "label": "critico: abaixo de 95%"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "xPos": 3,
+        "yPos": 1,
+        "width": 9,
+        "height": 4,
+        "widget": {
+          "title": "Verificacoes bem-sucedidas por alvo e regiao de origem",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "legendTemplate": "${resource.labels.host} - ${metric.labels.checker_location}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"monitoring.googleapis.com/uptime_check/check_passed\" resource.type=\"uptime_url\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_FRACTION_TRUE",
+                      "crossSeriesReducer": "REDUCE_MEAN",
+                      "groupByFields": [
+                        "resource.labels.host",
+                        "metric.labels.checker_location"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "fracao de sucesso",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 5,
+        "width": 12,
+        "height": 1,
+        "widget": {
+          "text": {
+            "content": "### 2. Desempenho - quais operacoes estao demorando mais, e quando?\n`app_request_duration_ms`, extraida do campo `duration_ms` do log `http_request` do back-end. Agrupada pela **rota padronizada** (`/todos/:id`), sem a qual cada PATCH viraria uma serie distinta. Percentis em janelas de 5 min: a media esconde a cauda, o p95 e o que o usuario sente no pior caso.",
+            "format": "MARKDOWN",
+            "style": {
+              "backgroundColor": "#F1F3F4",
+              "textColor": "#202124",
+              "horizontalAlignment": "H_LEFT",
+              "verticalAlignment": "V_CENTER",
+              "padding": "P_EXTRA_SMALL",
+              "fontSize": "FS_MEDIUM"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 6,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "p95 da duracao por operacao (ms)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "legendTemplate": "p95 ${metric.labels.operation}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/app_request_duration_ms\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": [
+                        "metric.labels.operation"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "ms",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "yPos": 6,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "p50 da duracao por operacao (ms)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "legendTemplate": "p50 ${metric.labels.operation}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/app_request_duration_ms\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_PERCENTILE_50",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": [
+                        "metric.labels.operation"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "ms",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 10,
+        "width": 12,
+        "height": 1,
+        "widget": {
+          "text": {
+            "content": "### 3. Erros - quais falhas ocorrem e que parcela das requisicoes representam?\n`app_request_count` separado por `status_class`. **Taxa de erro** = requisicoes `4xx` + `5xx` (numerador) dividido por todas as requisicoes (denominador), na mesma janela de 5 min. A distincao importa: `4xx` e o cliente pedindo o impossivel (campo faltando, id inexistente) e pode ser normal; `5xx` e a aplicacao falhando, e nunca e.",
+            "format": "MARKDOWN",
+            "style": {
+              "backgroundColor": "#F1F3F4",
+              "textColor": "#202124",
+              "horizontalAlignment": "H_LEFT",
+              "verticalAlignment": "V_CENTER",
+              "padding": "P_EXTRA_SMALL",
+              "fontSize": "FS_MEDIUM"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 11,
+        "width": 3,
+        "height": 4,
+        "widget": {
+          "title": "Taxa de erro (fracao das requisicoes)",
+          "scorecard": {
+            "timeSeriesQuery": {
+              "timeSeriesFilterRatio": {
+                "numerator": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/app_request_count\" resource.type=\"cloud_run_revision\" metric.labels.status_class=monitoring.regex.full_match(\"4xx|5xx\")",
+                  "aggregation": {
+                    "alignmentPeriod": "300s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                },
+                "denominator": {
+                  "filter": "metric.type=\"logging.googleapis.com/user/app_request_count\" resource.type=\"cloud_run_revision\"",
+                  "aggregation": {
+                    "alignmentPeriod": "300s",
+                    "perSeriesAligner": "ALIGN_DELTA",
+                    "crossSeriesReducer": "REDUCE_SUM"
+                  }
+                }
+              }
+            },
+            "sparkChartView": {
+              "sparkChartType": "SPARK_LINE"
+            },
+            "thresholds": [
+              {
+                "value": 0.05,
+                "color": "YELLOW",
+                "direction": "ABOVE",
+                "label": "atencao: acima de 5%"
+              },
+              {
+                "value": 0.2,
+                "color": "RED",
+                "direction": "ABOVE",
+                "label": "critico: acima de 20%"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "xPos": 3,
+        "yPos": 11,
+        "width": 9,
+        "height": 4,
+        "widget": {
+          "title": "Requisicoes por classe de resposta e operacao",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "STACKED_AREA",
+                "targetAxis": "Y1",
+                "legendTemplate": "${metric.labels.status_class} - ${metric.labels.operation}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/app_request_count\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [
+                        "metric.labels.status_class",
+                        "metric.labels.operation"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "requisicoes por 5 min",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 15,
+        "width": 12,
+        "height": 1,
+        "widget": {
+          "text": {
+            "content": "### 4. Uso da aplicacao - quais funcionalidades sao usadas e como o volume varia?\n`app_request_count` filtrado por **`client=\"app\"`**, somado por operacao de negocio. O filtro e o ponto: sem ele, as verificacoes de disponibilidade (a cada 5 min, para sempre) e os robos de busca entrariam na conta, e o painel estaria medindo o proprio monitoramento em vez do uso real. **Zero aqui significa ninguem usando** - compare com o painel 1 para distinguir de falha de coleta.",
+            "format": "MARKDOWN",
+            "style": {
+              "backgroundColor": "#F1F3F4",
+              "textColor": "#202124",
+              "horizontalAlignment": "H_LEFT",
+              "verticalAlignment": "V_CENTER",
+              "padding": "P_EXTRA_SMALL",
+              "fontSize": "FS_MEDIUM"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 16,
+        "width": 8,
+        "height": 4,
+        "widget": {
+          "title": "Operacoes de negocio por 5 min (somente trafego real)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "STACKED_BAR",
+                "targetAxis": "Y1",
+                "legendTemplate": "${metric.labels.operation}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/app_request_count\" resource.type=\"cloud_run_revision\" metric.labels.client=\"app\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [
+                        "metric.labels.operation"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "requisicoes por 5 min",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 8,
+        "yPos": 16,
+        "width": 4,
+        "height": 4,
+        "widget": {
+          "title": "Composicao do trafego por tipo de cliente",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "STACKED_AREA",
+                "targetAxis": "Y1",
+                "legendTemplate": "${metric.labels.client}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/app_request_count\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [
+                        "metric.labels.client"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "requisicoes por 5 min",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 20,
+        "width": 12,
+        "height": 1,
+        "widget": {
+          "text": {
+            "content": "### 5. Banco de dados - as operacoes com o Firestore funcionam, e com qual duracao?\n`app_db_operation_duration_ms`, medida **pelo back-end**: do inicio ao fim da chamada ao SDK. O alcance e explicito - inclui a latencia de rede ate o servico gerenciado, e nao apenas o tempo interno do Firestore. O `error_type` carrega o codigo gRPC: `7` e PERMISSION_DENIED, o sintoma de permissao IAM removida ou expirada.",
+            "format": "MARKDOWN",
+            "style": {
+              "backgroundColor": "#F1F3F4",
+              "textColor": "#202124",
+              "horizontalAlignment": "H_LEFT",
+              "verticalAlignment": "V_CENTER",
+              "padding": "P_EXTRA_SMALL",
+              "fontSize": "FS_MEDIUM"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 21,
+        "width": 3,
+        "height": 4,
+        "widget": {
+          "title": "Falhas no banco (ultimas 24 h)",
+          "scorecard": {
+            "timeSeriesQuery": {
+              "timeSeriesFilter": {
+                "filter": "metric.type=\"logging.googleapis.com/user/app_db_operation_count\" resource.type=\"cloud_run_revision\" metric.labels.result=\"error\"",
+                "aggregation": {
+                  "alignmentPeriod": "86400s",
+                  "perSeriesAligner": "ALIGN_DELTA",
+                  "crossSeriesReducer": "REDUCE_SUM"
+                }
+              }
+            },
+            "sparkChartView": {
+              "sparkChartType": "SPARK_BAR"
+            },
+            "thresholds": [
+              {
+                "value": 1,
+                "color": "YELLOW",
+                "direction": "ABOVE",
+                "label": "qualquer falha merece investigacao"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "xPos": 3,
+        "yPos": 21,
+        "width": 5,
+        "height": 4,
+        "widget": {
+          "title": "p95 da duracao por operacao no Firestore (ms)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "legendTemplate": "${metric.labels.operation}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/app_db_operation_duration_ms\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": [
+                        "metric.labels.operation"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "ms",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 8,
+        "yPos": 21,
+        "width": 4,
+        "height": 4,
+        "widget": {
+          "title": "Operacoes por desfecho (success / error)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "STACKED_AREA",
+                "targetAxis": "Y1",
+                "legendTemplate": "${metric.labels.result} ${metric.labels.error_type}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/app_db_operation_count\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [
+                        "metric.labels.result",
+                        "metric.labels.error_type"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "operacoes por 5 min",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 25,
+        "width": 12,
+        "height": 1,
+        "widget": {
+          "text": {
+            "content": "### 6. Redundancia - como os pontos de atendimento se comportam durante uma indisponibilidade?\n`proxy_upstream_requests`, escrita pelo **proxy reverso na Vercel** - a unica fonte fora do Google Cloud. O proxy trata `southamerica-east1` como preferencial e so recorre a `us-central1` em falha, entao em operacao normal a serie de Sao Paulo e a unica visivel. `failover=\"true\"` conta as requisicoes que so foram atendidas depois de uma regiao falhar: **em regime normal esta serie e zero, e qualquer valor acima disso e o sintoma de uma regiao doente.**",
+            "format": "MARKDOWN",
+            "style": {
+              "backgroundColor": "#F1F3F4",
+              "textColor": "#202124",
+              "horizontalAlignment": "H_LEFT",
+              "verticalAlignment": "V_CENTER",
+              "padding": "P_EXTRA_SMALL",
+              "fontSize": "FS_MEDIUM"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 26,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Trafego encaminhado por destino e regiao",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "STACKED_AREA",
+                "targetAxis": "Y1",
+                "legendTemplate": "${metric.labels.target} - ${metric.labels.target_region}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/proxy_upstream_requests\" resource.type=\"global\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [
+                        "metric.labels.target",
+                        "metric.labels.target_region"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "encaminhamentos por 5 min",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "yPos": 26,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Eventos de failover e recusas do destino",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "STACKED_BAR",
+                "targetAxis": "Y1",
+                "legendTemplate": "failover=${metric.labels.failover} ${metric.labels.error_type}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"logging.googleapis.com/user/proxy_upstream_requests\" resource.type=\"global\" metric.labels.failover=monitoring.regex.full_match(\"true\") OR metric.labels.status_class=monitoring.regex.full_match(\"5xx\")",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [
+                        "metric.labels.failover",
+                        "metric.labels.error_type"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "eventos por 5 min",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      }
+    ]
+  }
+}

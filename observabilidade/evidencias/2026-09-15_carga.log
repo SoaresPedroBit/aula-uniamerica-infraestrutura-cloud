@@ -1,0 +1,22 @@
+== Carga controlada ==
+inicio: 2026-09-15 22:15:02 GMT
+repeticoes: 12
+
+ 1/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+ 2/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+ 3/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+ 4/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+ 5/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+ 6/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+ 7/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+ 8/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+ 9/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+10/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+11/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+12/12  front:200 listar:200 criar:201 concluir:200 excluir:200 | 400:400 404:404
+
+fim: 2026-09-15 22:16:54 GMT
+
+Os registros levam ate ~2 min para aparecer nos paineis.
+Paineis validados por este cenario: 2 (desempenho), 3 (erros),
+4 (uso) e 5 (banco de dados).

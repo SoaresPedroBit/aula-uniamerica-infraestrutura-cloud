@@ -1,0 +1,110 @@
+[
+  {
+    "insertId": "6aa9c7eb0006be43bebc0d14",
+    "jsonPayload": {
+      "client": "uptime",
+      "duration_ms": 41.2,
+      "env": "producao",
+      "event": "http_request",
+      "message": "GET /todos 200",
+      "method": "GET",
+      "operation": "listar_tarefas",
+      "region": "southamerica-east1",
+      "request_id": "e6e3666185ea58ee25c291ee75b7e3ba",
+      "route": "/todos",
+      "service": "backend",
+      "status": 200,
+      "status_class": "2xx"
+    },
+    "labels": {
+      "instanceId": "00a41e8c1d973832d1200713e054ecf82b8dec326348f3e5dc1e4d1b91b7478f03c04720aada94a35c4dacc3352bfdba0df047405640e3213ab171467ce299739eecdd181e6933c47132df9ab65749d28d451b234b"
+    },
+    "logName": "projects/mensal2/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2026-09-15T22:34:19.786205731Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "backend",
+        "location": "southamerica-east1",
+        "project_id": "mensal2",
+        "revision_name": "backend-00002-j6k",
+        "service_name": "backend"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:34:19.441923Z",
+    "trace": "projects/mensal2/traces/e6e3666185ea58ee25c291ee75b7e3ba"
+  },
+  {
+    "insertId": "6aa9c75f0005c083d45d8cc4",
+    "jsonPayload": {
+      "client": "uptime",
+      "duration_ms": 34.22,
+      "env": "producao",
+      "event": "http_request",
+      "message": "GET /todos 200",
+      "method": "GET",
+      "operation": "listar_tarefas",
+      "region": "southamerica-east1",
+      "request_id": "a9353a2bb0eb0b5bf38611318aa5aee1",
+      "route": "/todos",
+      "service": "backend",
+      "status": 200,
+      "status_class": "2xx"
+    },
+    "labels": {
+      "instanceId": "00a41e8c1d973832d1200713e054ecf82b8dec326348f3e5dc1e4d1b91b7478f03c04720aada94a35c4dacc3352bfdba0df047405640e3213ab171467ce299739eecdd181e6933c47132df9ab65749d28d451b234b"
+    },
+    "logName": "projects/mensal2/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2026-09-15T22:31:59.713016408Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "backend",
+        "location": "southamerica-east1",
+        "project_id": "mensal2",
+        "revision_name": "backend-00002-j6k",
+        "service_name": "backend"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:31:59.376963Z",
+    "trace": "projects/mensal2/traces/a9353a2bb0eb0b5bf38611318aa5aee1"
+  },
+  {
+    "insertId": "6aa9c73e000a59d0cd602c2e",
+    "jsonPayload": {
+      "client": "uptime",
+      "duration_ms": 15.84,
+      "env": "producao",
+      "event": "http_request",
+      "message": "GET /todos 200",
+      "method": "GET",
+      "operation": "listar_tarefas",
+      "region": "southamerica-east1",
+      "request_id": "3fdabf7626263fd5237e9acce4f98f4b",
+      "route": "/todos",
+      "service": "backend",
+      "status": 200,
+      "status_class": "2xx"
+    },
+    "labels": {
+      "instanceId": "00a41e8c1d973832d1200713e054ecf82b8dec326348f3e5dc1e4d1b91b7478f03c04720aada94a35c4dacc3352bfdba0df047405640e3213ab171467ce299739eecdd181e6933c47132df9ab65749d28d451b234b"
+    },
+    "logName": "projects/mensal2/logs/run.googleapis.com%2Fstdout",
+    "receiveTimestamp": "2026-09-15T22:31:27.015186883Z",
+    "resource": {
+      "labels": {
+        "configuration_name": "backend",
+        "location": "southamerica-east1",
+        "project_id": "mensal2",
+        "revision_name": "backend-00002-j6k",
+        "service_name": "backend"
+      },
+      "type": "cloud_run_revision"
+    },
+    "severity": "INFO",
+    "timestamp": "2026-09-15T22:31:26.678352Z",
+    "trace": "projects/mensal2/traces/3fdabf7626263fd5237e9acce4f98f4b"
+  }
+]

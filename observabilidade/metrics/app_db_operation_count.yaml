@@ -1,0 +1,32 @@
+# Contagem das operacoes do back-end contra o Firestore.
+#
+# Existe separada da distribuicao de duracao pelo mesmo motivo que
+# app_request_count existe ao lado de app_request_duration_ms: o Cloud
+# Monitoring nao soma amostras de uma distribuicao entre series. Para responder
+# "quantas operacoes falharam", e preciso um contador.
+description: >-
+  Contagem de operacoes no Firestore vistas pelo back-end, uma por registro
+  db_operation, rotulada pela operacao, pelo desfecho e pelo tipo de erro.
+filter: |-
+  resource.type="cloud_run_revision"
+  resource.labels.service_name="backend"
+  jsonPayload.event="db_operation"
+labelExtractors:
+  operation: EXTRACT(jsonPayload.operation)
+  result: EXTRACT(jsonPayload.result)
+  error_type: EXTRACT(jsonPayload.error_type)
+metricDescriptor:
+  metricKind: DELTA
+  valueType: INT64
+  unit: '1'
+  displayName: Operacoes no Firestore
+  labels:
+    - key: operation
+      valueType: STRING
+      description: Operacao no banco (listar, inserir, ler_documento, atualizar, excluir)
+    - key: result
+      valueType: STRING
+      description: Desfecho da operacao (success, error)
+    - key: error_type
+      valueType: STRING
+      description: Codigo do erro quando houve falha (7 = PERMISSION_DENIED); vazio em sucesso
