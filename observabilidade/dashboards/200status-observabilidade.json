@@ -544,7 +544,7 @@
         "height": 1,
         "widget": {
           "text": {
-            "content": "### 6. Redundancia - como os pontos de atendimento se comportam durante uma indisponibilidade?\n`proxy_upstream_requests`, escrita pelo **proxy reverso na Vercel** - a unica fonte fora do Google Cloud. O proxy trata `southamerica-east1` como preferencial e so recorre a `us-central1` em falha, entao em operacao normal a serie de Sao Paulo e a unica visivel. `failover=\"true\"` conta as requisicoes que so foram atendidas depois de uma regiao falhar: **em regime normal esta serie e zero, e qualquer valor acima disso e o sintoma de uma regiao doente.**",
+            "content": "### 6. Redundancia - como os pontos de atendimento se comportam durante uma indisponibilidade?\nMetrica nativa do balanceador (`https/backend_request_count`), agrupada por `backend_scope` - o rotulo de recurso que diz **qual regiao realmente atendeu**. Nao depende de log nem de instrumentacao. O balanceador envia tudo para a regiao mais proxima do usuario; so desvia se `outlierDetection` ejetar a regiao apos 3 respostas 5xx seguidas. **Health check nao existe para backend serverless** - o Cloud Run nao expoe instancias a sondar - e sem o outlier detection a documentacao da Google e explicita: o balanceador continuaria mandando trafego para uma regiao que esta respondendo erro. A serie `NO_BACKEND_SELECTED` e legitima: sao os redirecionamentos 80 -> 443, respondidos pelo proprio balanceador sem chegar a backend algum.",
             "format": "MARKDOWN",
             "style": {
               "backgroundColor": "#F1F3F4",
@@ -563,7 +563,7 @@
         "width": 6,
         "height": 4,
         "widget": {
-          "title": "Trafego encaminhado por destino e regiao",
+          "title": "Trafego por destino e regiao que atendeu",
           "xyChart": {
             "chartOptions": {
               "mode": "COLOR"
@@ -572,18 +572,18 @@
               {
                 "plotType": "STACKED_AREA",
                 "targetAxis": "Y1",
-                "legendTemplate": "${metric.labels.target} - ${metric.labels.target_region}",
+                "legendTemplate": "${resource.labels.backend_target_name} - ${resource.labels.backend_scope}",
                 "minAlignmentPeriod": "300s",
                 "timeSeriesQuery": {
                   "timeSeriesFilter": {
-                    "filter": "metric.type=\"logging.googleapis.com/user/proxy_upstream_requests\" resource.type=\"global\"",
+                    "filter": "metric.type=\"loadbalancing.googleapis.com/https/backend_request_count\" resource.type=\"https_lb_rule\"",
                     "aggregation": {
                       "alignmentPeriod": "300s",
-                      "perSeriesAligner": "ALIGN_DELTA",
+                      "perSeriesAligner": "ALIGN_RATE",
                       "crossSeriesReducer": "REDUCE_SUM",
                       "groupByFields": [
-                        "metric.labels.target",
-                        "metric.labels.target_region"
+                        "resource.labels.backend_target_name",
+                        "resource.labels.backend_scope"
                       ]
                     }
                   }
@@ -591,7 +591,7 @@
               }
             ],
             "yAxis": {
-              "label": "encaminhamentos por 5 min",
+              "label": "requisicoes/s",
               "scale": "LINEAR"
             }
           }
@@ -603,7 +603,7 @@
         "width": 6,
         "height": 4,
         "widget": {
-          "title": "Eventos de failover e recusas do destino",
+          "title": "Respostas 5xx por regiao (o que dispara a ejecao)",
           "xyChart": {
             "chartOptions": {
               "mode": "COLOR"
@@ -612,18 +612,18 @@
               {
                 "plotType": "STACKED_BAR",
                 "targetAxis": "Y1",
-                "legendTemplate": "failover=${metric.labels.failover} ${metric.labels.error_type}",
+                "legendTemplate": "${resource.labels.backend_scope} - ${metric.labels.response_code_class}",
                 "minAlignmentPeriod": "300s",
                 "timeSeriesQuery": {
                   "timeSeriesFilter": {
-                    "filter": "metric.type=\"logging.googleapis.com/user/proxy_upstream_requests\" resource.type=\"global\" metric.labels.failover=monitoring.regex.full_match(\"true\") OR metric.labels.status_class=monitoring.regex.full_match(\"5xx\")",
+                    "filter": "metric.type=\"loadbalancing.googleapis.com/https/backend_request_count\" resource.type=\"https_lb_rule\" metric.labels.response_code_class=\"500\"",
                     "aggregation": {
                       "alignmentPeriod": "300s",
-                      "perSeriesAligner": "ALIGN_DELTA",
+                      "perSeriesAligner": "ALIGN_RATE",
                       "crossSeriesReducer": "REDUCE_SUM",
                       "groupByFields": [
-                        "metric.labels.failover",
-                        "metric.labels.error_type"
+                        "resource.labels.backend_scope",
+                        "metric.labels.response_code_class"
                       ]
                     }
                   }
@@ -631,7 +631,7 @@
               }
             ],
             "yAxis": {
-              "label": "eventos por 5 min",
+              "label": "requisicoes/s",
               "scale": "LINEAR"
             }
           }
