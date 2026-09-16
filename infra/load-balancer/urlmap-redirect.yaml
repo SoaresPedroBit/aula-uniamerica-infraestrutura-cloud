@@ -1,0 +1,8 @@
+# URL map dedicado a porta 80. Nao roteia para backend algum: devolve 301 para
+# HTTPS, preservando o comportamento que a Vercel entregava pronto. Sem isto, o
+# acesso em texto claro simplesmente falharia em vez de ser corrigido.
+name: urlmap-redirect-200status
+defaultUrlRedirect:
+  httpsRedirect: true
+  redirectResponseCode: MOVED_PERMANENTLY_DEFAULT
+  stripQuery: false

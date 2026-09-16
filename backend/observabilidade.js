@@ -85,6 +85,12 @@ function middlewareDeRequisicao(req, res, next) {
   // requisicao sejam registradas com o mesmo identificador.
   req.observabilidade = { traceId, inicio };
 
+  // Identifica a regiao que atendeu, na propria resposta. O Load Balancer da
+  // GCP nao oferece variavel de cabecalho com o backend escolhido, entao quem
+  // carimba e o servico: e o que torna o failover verificavel com um curl, e
+  // nao apenas consultando o painel depois.
+  res.setHeader('X-Origem-Regiao', REGIAO);
+
   res.on('finish', () => {
     // req.route so existe depois do roteamento: e a rota padronizada
     // (/todos/:id), e nao o caminho concreto com o id do documento dentro.

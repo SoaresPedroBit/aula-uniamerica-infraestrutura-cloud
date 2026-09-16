@@ -1,0 +1,25 @@
+# Template processado pelo envsubst na partida do contêiner: a imagem oficial do
+# nginx expande ${VARIAVEL} em /etc/nginx/templates/*.template e grava o
+# resultado em /etc/nginx/conf.d/.
+#
+# Existe por um motivo especifico: o Load Balancer da GCP nao tem variavel de
+# cabecalho que revele qual backend atendeu a requisicao ({backend_scope} so
+# existe nos logs). Sem isto, o failover entre regioes seria afirmado e nao
+# demonstrado. Como a mesma imagem roda nas duas regioes, a identidade vem da
+# variavel de ambiente REGION, definida no deploy de cada uma.
+server {
+    listen       80;
+    server_name  localhost;
+
+    # "always" garante o cabecalho tambem nas respostas de erro, que sao
+    # justamente as que interessam durante um teste de falha.
+    add_header X-Origem-Regiao "${REGION}" always;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html;
+        # Aplicacao de pagina unica: qualquer caminho desconhecido devolve o
+        # index, e o roteamento acontece no navegador.
+        try_files $uri $uri/ /index.html;
+    }
+}

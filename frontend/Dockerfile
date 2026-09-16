@@ -23,6 +23,11 @@ FROM nginx:alpine
 # Copiando o build da etapa anterior para o diretório padrão do Nginx
 COPY --from=build /app/build /usr/share/nginx/html
 
+# Configuração servida a partir de um template: a imagem oficial do nginx roda
+# envsubst sobre /etc/nginx/templates/*.template antes de subir, o que permite
+# a cada região se identificar pela variável REGION do deploy.
+COPY default.conf.template /etc/nginx/templates/default.conf.template
+
 # Expondo a porta 80 para acesso à aplicação
 EXPOSE 80
 

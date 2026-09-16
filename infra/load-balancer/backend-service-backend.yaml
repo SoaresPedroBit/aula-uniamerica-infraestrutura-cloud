@@ -1,0 +1,22 @@
+affinityCookieTtlSec: 0
+backends:
+- balancingMode: UTILIZATION
+  capacityScaler: 1.0
+  group: https://www.googleapis.com/compute/v1/projects/mensal2/regions/southamerica-east1/networkEndpointGroups/neg-backend-rj
+connectionDraining:
+  drainingTimeoutSec: 0
+description: ''
+enableCDN: false
+loadBalancingScheme: EXTERNAL_MANAGED
+logConfig:
+  enable: true
+  optionalMode: EXCLUDE_ALL_OPTIONAL
+  sampleRate: 1.0
+name: bs-backend
+port: 80
+portName: http
+protocol: HTTP
+sessionAffinity: NONE
+timeoutSec: 30
+usedBy:
+- reference: https://www.googleapis.com/compute/v1/projects/mensal2/global/urlMaps/urlmap-200status
