@@ -17,6 +17,33 @@ reproduzível: não se sabe o que mudou, nem como voltar atrás.
 
 ---
 
+## Editando o dashboard sem atropelar ninguém
+
+O dashboard é editado por mais de uma pessoa do grupo, e parte delas pelo console. **Nunca
+use `dashboards delete` seguido de `create`**: isso substitui o painel inteiro pelo JSON local
+e descarta qualquer edição feita pelo console, sem aviso e sem recuperação — o Cloud
+Monitoring não guarda histórico de dashboards.
+
+O caminho seguro é ler o estado do servidor, alterar só o que interessa e escrever de volta:
+
+```bash
+ID=00ed850d-52e6-4c6f-ae8a-922d947d6420
+
+# 1. traz o que está publicado agora, com as edições de todo mundo
+gcloud monitoring dashboards describe "$ID" --format=json   > observabilidade/dashboards/200status-observabilidade.json
+
+# 2. edite apenas o painel em questão no arquivo
+
+# 3. devolve preservando o ID e o restante do conteúdo
+gcloud monitoring dashboards update "$ID"   --config-from-file=observabilidade/dashboards/200status-observabilidade.json
+```
+
+O JSON versionado neste diretório serve para recriar o dashboard **do zero**, num projeto
+novo ou depois de uma perda. Ele não é a fonte da verdade do que está no ar: quem está no ar
+é o servidor.
+
+---
+
 ## Recriar tudo do zero
 
 ```bash
