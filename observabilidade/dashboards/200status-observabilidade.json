@@ -636,6 +636,386 @@
             }
           }
         }
+      },
+      {
+        "xPos": 0,
+        "yPos": 30,
+        "width": 12,
+        "height": 1,
+        "widget": {
+          "text": {
+            "content": "### 7. Saturacao dos conteineres - a memoria e a CPU alocadas sao suficientes?\nMetricas da plataforma, e nao dos logs: `container/memory/utilizations` e `container/cpu/utilizations`, em fracao do limite **configurado** (512 MiB e 1 vCPU por instancia, em ambos os servicos). Responde a uma pergunta que nenhum painel anterior responde: nao *se* a aplicacao responde, mas *com quanta folga*. Memoria perto de 1.0 significa que o conteiner sera morto e reiniciado no proximo pico - uma falha que aparece nos outros paineis apenas como latencia ou 5xx, sem revelar a causa.",
+            "format": "MARKDOWN",
+            "style": {
+              "backgroundColor": "#F1F3F4",
+              "textColor": "#202124",
+              "horizontalAlignment": "H_LEFT",
+              "verticalAlignment": "V_CENTER",
+              "padding": "P_EXTRA_SMALL",
+              "fontSize": "FS_MEDIUM"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 31,
+        "width": 3,
+        "height": 4,
+        "widget": {
+          "title": "Pico de memoria do back-end (fracao do limite)",
+          "scorecard": {
+            "timeSeriesQuery": {
+              "timeSeriesFilter": {
+                "filter": "metric.type=\"run.googleapis.com/container/memory/utilizations\" resource.type=\"cloud_run_revision\" resource.labels.service_name=\"backend\"",
+                "aggregation": {
+                  "alignmentPeriod": "300s",
+                  "perSeriesAligner": "ALIGN_PERCENTILE_99",
+                  "crossSeriesReducer": "REDUCE_MAX"
+                }
+              }
+            },
+            "sparkChartView": {
+              "sparkChartType": "SPARK_LINE"
+            },
+            "thresholds": [
+              {
+                "value": 0.8,
+                "color": "YELLOW",
+                "direction": "ABOVE",
+                "label": "atencao: acima de 80% do limite"
+              },
+              {
+                "value": 0.9,
+                "color": "RED",
+                "direction": "ABOVE",
+                "label": "critico: risco de o conteiner ser morto"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "xPos": 3,
+        "yPos": 31,
+        "width": 5,
+        "height": 4,
+        "widget": {
+          "title": "Memoria por servico: pico (p99) e tipico (p50)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "legendTemplate": "p99 ${resource.labels.service_name}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"run.googleapis.com/container/memory/utilizations\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_PERCENTILE_99",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": [
+                        "resource.labels.service_name"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "fracao do limite",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 8,
+        "yPos": 31,
+        "width": 4,
+        "height": 4,
+        "widget": {
+          "title": "CPU por servico (p99 da fracao do limite)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "legendTemplate": "${resource.labels.service_name}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"run.googleapis.com/container/cpu/utilizations\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_PERCENTILE_99",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": [
+                        "resource.labels.service_name"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "fracao do limite",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 35,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Instancias por servico e estado (ativa / ociosa)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "STACKED_AREA",
+                "targetAxis": "Y1",
+                "legendTemplate": "${resource.labels.service_name} - ${metric.labels.state}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"run.googleapis.com/container/instance_count\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [
+                        "resource.labels.service_name",
+                        "metric.labels.state"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "instancias",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 6,
+        "yPos": 35,
+        "width": 6,
+        "height": 4,
+        "widget": {
+          "title": "Latencia de partida a frio (p95, ms)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "legendTemplate": "${resource.labels.service_name}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"run.googleapis.com/container/startup_latencies\" resource.type=\"cloud_run_revision\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_PERCENTILE_95",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": [
+                        "resource.labels.service_name"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "ms",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 39,
+        "width": 12,
+        "height": 1,
+        "widget": {
+          "text": {
+            "content": "### 8. Consumo do banco de dados - quanto o Firestore ocupa e consome da cota?\n**O Firestore nao expoe memoria RAM nem CPU**, e isso nao e uma lacuna da coleta: sendo serverless gerenciado, nao existe servidor nosso cujo consumo pudesse ser medido. O equivalente e o que de fato se paga e se esgota - bytes armazenados e operacoes por dia. Distingue-se do painel 5: la a pergunta e se as operacoes *funcionam e em quanto tempo*; aqui e *quanto do recurso e da cota elas consomem*. Cotas gratuitas: 1 GiB de armazenamento, 50 mil leituras e 20 mil escritas por dia.",
+            "format": "MARKDOWN",
+            "style": {
+              "backgroundColor": "#F1F3F4",
+              "textColor": "#202124",
+              "horizontalAlignment": "H_LEFT",
+              "verticalAlignment": "V_CENTER",
+              "padding": "P_EXTRA_SMALL",
+              "fontSize": "FS_MEDIUM"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 40,
+        "width": 3,
+        "height": 4,
+        "widget": {
+          "title": "Armazenamento ocupado (bytes)",
+          "scorecard": {
+            "timeSeriesQuery": {
+              "timeSeriesFilter": {
+                "filter": "metric.type=\"firestore.googleapis.com/storage/data_and_index_storage_bytes\" resource.type=\"firestore.googleapis.com/Database\"",
+                "aggregation": {
+                  "alignmentPeriod": "300s",
+                  "perSeriesAligner": "ALIGN_MEAN",
+                  "crossSeriesReducer": "REDUCE_MAX"
+                }
+              }
+            },
+            "sparkChartView": {
+              "sparkChartType": "SPARK_LINE"
+            },
+            "thresholds": [
+              {
+                "value": 858993459,
+                "color": "YELLOW",
+                "direction": "ABOVE",
+                "label": "atencao: 80% do 1 GiB gratuito"
+              },
+              {
+                "value": 1073741824,
+                "color": "RED",
+                "direction": "ABOVE",
+                "label": "critico: 1 GiB, fim da cota gratuita"
+              }
+            ]
+          }
+        }
+      },
+      {
+        "xPos": 3,
+        "yPos": 40,
+        "width": 5,
+        "height": 4,
+        "widget": {
+          "title": "Crescimento do armazenamento (dados + indices)",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "LINE",
+                "targetAxis": "Y1",
+                "legendTemplate": "${resource.labels.database_id}",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"firestore.googleapis.com/storage/data_and_index_storage_bytes\" resource.type=\"firestore.googleapis.com/Database\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_MEAN",
+                      "crossSeriesReducer": "REDUCE_MAX",
+                      "groupByFields": [
+                        "resource.labels.database_id"
+                      ]
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "bytes",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 8,
+        "yPos": 40,
+        "width": 4,
+        "height": 4,
+        "widget": {
+          "title": "Operacoes de documento por 5 min",
+          "xyChart": {
+            "chartOptions": {
+              "mode": "COLOR"
+            },
+            "dataSets": [
+              {
+                "plotType": "STACKED_BAR",
+                "targetAxis": "Y1",
+                "legendTemplate": "leituras",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"firestore.googleapis.com/document/read_count\" resource.type=\"firestore_instance\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                }
+              },
+              {
+                "plotType": "STACKED_BAR",
+                "targetAxis": "Y1",
+                "legendTemplate": "escritas",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"firestore.googleapis.com/document/write_count\" resource.type=\"firestore_instance\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                }
+              },
+              {
+                "plotType": "STACKED_BAR",
+                "targetAxis": "Y1",
+                "legendTemplate": "exclusoes",
+                "minAlignmentPeriod": "300s",
+                "timeSeriesQuery": {
+                  "timeSeriesFilter": {
+                    "filter": "metric.type=\"firestore.googleapis.com/document/delete_count\" resource.type=\"firestore_instance\"",
+                    "aggregation": {
+                      "alignmentPeriod": "300s",
+                      "perSeriesAligner": "ALIGN_DELTA",
+                      "crossSeriesReducer": "REDUCE_SUM"
+                    }
+                  }
+                }
+              }
+            ],
+            "yAxis": {
+              "label": "documentos",
+              "scale": "LINEAR"
+            }
+          }
+        }
       }
     ]
   }

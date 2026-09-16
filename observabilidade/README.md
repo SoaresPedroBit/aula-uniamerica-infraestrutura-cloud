@@ -41,9 +41,28 @@ Dashboard: <https://console.cloud.google.com/monitoring/dashboards?project=mensa
 | `backend/observabilidade.js` | linha JSON no stdout, que o Cloud Run converte em `jsonPayload` | `app_request_count`, `app_request_duration_ms`, `app_db_operation_count`, `app_db_operation_duration_ms` |
 | `proxy/lib/observabilidade.js` | `POST logging.googleapis.com/v2/entries:write`, autenticado pelo token federado | `proxy_upstream_requests` |
 | Uptime checks | métrica nativa do Monitoring | painel 1 |
+| Plataforma (Cloud Run) | métricas nativas, sem instrumentação | painéis 7 (RAM, CPU, instâncias) |
+| Plataforma (Firestore) | métricas nativas, sem instrumentação | painel 8 (armazenamento, operações) |
 
 Dois eventos saem do back-end por requisição, ligados pelo mesmo `request_id` (o trace do
 Cloud Run): `http_request` e um `db_operation` por operação no Firestore.
+
+Os painéis 7 e 8 não dependem de log algum: consomem métricas que a plataforma já publica.
+Por isso continuam preenchidos mesmo que a instrumentação da aplicação pare — e é essa
+independência que os torna úteis para diagnosticar a própria coleta.
+
+### Dois recursos monitorados para o mesmo banco
+
+As métricas do Firestore estão divididas em dois `resource.type`, e trocá-los devolve
+"filtro não especifica uma combinação válida":
+
+| Métrica | `resource.type` |
+|---|---|
+| `storage/data_and_index_storage_bytes` | `firestore.googleapis.com/Database` |
+| `document/read_count`, `write_count`, `delete_count` | `firestore_instance` |
+
+Cada requisição à API de `timeSeries` aceita **um único** `metric.type`. Somar leituras,
+escritas e exclusões num gráfico exige três `dataSets`, não um filtro `one_of`.
 
 ### A permissão do proxy tem uma sutileza
 
